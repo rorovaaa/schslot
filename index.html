@@ -1,0 +1,1890 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Школьный Кейс — Рулетка Наград</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@700;800;900&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+
+    :root {
+      --bg: #090a0f;
+      --panel: #11141d;
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --panel-border-hover: rgba(255, 255, 255, 0.2);
+      
+      /* CS2 High-Tier Rarity Palette */
+      --rarity-covert: #eb4b4b;       /* Отмена двойки (5% Экстра-редкое) */
+      --rarity-gold: #e4ae39;         /* Пять в журнал (15% Золото) */
+      --rarity-classified: #d32ce6;   /* +1 балл (25% Засекреченное) */
+      --rarity-restricted: #4b69ff;   /* Отмена Д/З (25% Армейское) */
+      --rarity-mil-spec: #5e98d9;     /* Помощь друга (30% Ширпотреб) */
+
+      --card-w: 200px;
+      --card-h: 275px;
+      --gap: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: #f1f5f9;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+      position: relative;
+      background-image: 
+        radial-gradient(ellipse 90% 50% at 50% -10%, rgba(228, 174, 57, 0.09), transparent 70%),
+        radial-gradient(ellipse 60% 40% at 50% 110%, rgba(75, 105, 255, 0.07), transparent);
+    }
+
+    .backdrop-fx {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    /* Header */
+    header {
+      width: 100%;
+      max-width: 1240px;
+      padding: 22px 32px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .case-identity {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .case-icon-box {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(145deg, #1e2433, #121622);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .case-title {
+      font-family: 'Cabinet Grotesk', sans-serif;
+      font-weight: 900;
+      font-size: 1.35rem;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .case-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      background: rgba(228, 174, 57, 0.15);
+      border: 1px solid rgba(228, 174, 57, 0.4);
+      color: #f6c85b;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+
+    .case-subtitle {
+      font-size: 0.8rem;
+      color: #717d96;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pill-btn {
+      background: #141824;
+      border: 1px solid var(--panel-border);
+      color: #94a3b8;
+      height: 42px;
+      padding: 0 14px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+      transition: all 0.18s ease;
+      font-family: inherit;
+    }
+
+    .pill-btn:hover {
+      background: #1c2233;
+      border-color: var(--panel-border-hover);
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .pill-btn.icon-only {
+      width: 42px;
+      padding: 0;
+      justify-content: center;
+    }
+
+    /* Main Container */
+    main {
+      width: 100%;
+      max-width: 1240px;
+      padding: 12px 24px 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 5;
+    }
+
+    /* Student Bar */
+    .student-bar-wrapper {
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      background: rgba(18, 22, 34, 0.7);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--panel-border);
+      border-radius: 40px;
+      padding: 6px 8px 6px 18px;
+      width: 100%;
+      max-width: 460px;
+      transition: all 0.2s ease;
+    }
+
+    .student-bar-wrapper:focus-within {
+      border-color: rgba(228, 174, 57, 0.5);
+      background: rgba(22, 28, 42, 0.95);
+      box-shadow: 0 0 24px rgba(228, 174, 57, 0.15);
+    }
+
+    .student-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #64748b;
+      margin-right: 12px;
+      white-space: nowrap;
+    }
+
+    .student-input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #ffffff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      width: 100%;
+      font-family: inherit;
+    }
+
+    .student-input::placeholder {
+      color: #475569;
+      font-weight: 400;
+    }
+
+    .student-clear-btn {
+      background: transparent;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s;
+    }
+    .student-clear-btn:hover { color: #f87171; }
+
+    /* The Roulette Cinema Box */
+    .roulette-viewport {
+      position: relative;
+      width: 100%;
+      height: 320px;
+      background: #0d0f17;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      box-shadow: 
+        0 24px 60px -10px rgba(0, 0, 0, 0.8),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    /* Ambient Spotlight inside Roulette */
+    .roulette-viewport::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 400px;
+      height: 100%;
+      background: radial-gradient(circle at 50% 0%, rgba(228, 174, 57, 0.14), transparent 75%);
+      pointer-events: none;
+      z-index: 6;
+    }
+
+    /* Target Reticle (Laser pointer) */
+    .target-reticle {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      background: linear-gradient(to bottom, #f6c85b 0%, rgba(246, 200, 91, 0.3) 25%, rgba(246, 200, 91, 0.3) 75%, #f6c85b 100%);
+      box-shadow: 0 0 14px rgba(246, 200, 91, 0.8);
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .reticle-arrow-top, .reticle-arrow-bottom {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 21;
+      pointer-events: none;
+      filter: drop-shadow(0 0 8px rgba(246, 200, 91, 0.85));
+    }
+
+    .reticle-arrow-top {
+      top: -1px;
+      width: 0;
+      height: 0;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-top: 18px solid #f6c85b;
+    }
+
+    .reticle-arrow-bottom {
+      bottom: -1px;
+      width: 0;
+      height: 0;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-bottom: 18px solid #f6c85b;
+    }
+
+    /* Dark Cinematic Side Shadows */
+    .edge-shadow-left, .edge-shadow-right {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 180px;
+      z-index: 15;
+      pointer-events: none;
+    }
+
+    .edge-shadow-left {
+      left: 0;
+      background: linear-gradient(to right, #0d0f17 25%, rgba(13, 15, 23, 0));
+    }
+
+    .edge-shadow-right {
+      right: 0;
+      background: linear-gradient(to left, #0d0f17 25%, rgba(13, 15, 23, 0));
+    }
+
+    /* Reel Strip */
+    .reel-strip {
+      display: flex;
+      align-items: center;
+      gap: var(--gap);
+      padding: 0 24px;
+      will-change: transform;
+      position: relative;
+    }
+
+    /* High-End CS2 Style Inventory Card */
+    .item-card {
+      width: var(--card-w);
+      height: var(--card-h);
+      background: #131722;
+      border-radius: 14px;
+      position: relative;
+      flex-shrink: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .item-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 140px;
+      opacity: 0.25;
+      pointer-events: none;
+    }
+
+    .item-card[data-rarity="covert"]::before { background: radial-gradient(circle at 50% 0%, var(--rarity-covert), transparent 70%); }
+    .item-card[data-rarity="covert"] { border-bottom: 4px solid var(--rarity-covert); }
+
+    .item-card[data-rarity="gold"]::before { background: radial-gradient(circle at 50% 0%, var(--rarity-gold), transparent 70%); }
+    .item-card[data-rarity="gold"] { border-bottom: 4px solid var(--rarity-gold); }
+
+    .item-card[data-rarity="classified"]::before { background: radial-gradient(circle at 50% 0%, var(--rarity-classified), transparent 70%); }
+    .item-card[data-rarity="classified"] { border-bottom: 4px solid var(--rarity-classified); }
+
+    .item-card[data-rarity="restricted"]::before { background: radial-gradient(circle at 50% 0%, var(--rarity-restricted), transparent 70%); }
+    .item-card[data-rarity="restricted"] { border-bottom: 4px solid var(--rarity-restricted); }
+
+    .item-card[data-rarity="mil-spec"]::before { background: radial-gradient(circle at 50% 0%, var(--rarity-mil-spec), transparent 70%); }
+    .item-card[data-rarity="mil-spec"] { border-bottom: 4px solid var(--rarity-mil-spec); }
+
+    /* Card Top Bar */
+    .item-card-top {
+      padding: 10px 12px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 2;
+    }
+
+    .item-tier-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 3px 6px;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.5);
+    }
+    .item-card[data-rarity="covert"] .item-tier-badge { color: var(--rarity-covert); }
+    .item-card[data-rarity="gold"] .item-tier-badge { color: var(--rarity-gold); }
+    .item-card[data-rarity="classified"] .item-tier-badge { color: var(--rarity-classified); }
+    .item-card[data-rarity="restricted"] .item-tier-badge { color: var(--rarity-restricted); }
+    .item-card[data-rarity="mil-spec"] .item-tier-badge { color: var(--rarity-mil-spec); }
+
+    .item-chance-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    /* Prize Artwork Frame (Supports Custom Images + SVG Fallback) */
+    .prize-artwork-box {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 12px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .prize-img-render {
+      width: 122px;
+      height: 122px;
+      object-fit: cover;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.7);
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .item-card:hover .prize-img-render {
+      transform: scale(1.05);
+    }
+
+    .prize-svg-render {
+      width: 110px;
+      height: 110px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.6));
+    }
+
+    /* Card Bottom Info */
+    .item-card-info {
+      padding: 8px 12px 14px;
+      background: linear-gradient(to top, rgba(14, 17, 26, 0.95), transparent);
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .item-title {
+      font-family: 'Cabinet Grotesk', sans-serif;
+      font-size: 0.98rem;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.2;
+      margin-bottom: 2px;
+      letter-spacing: 0.2px;
+    }
+
+    .item-desc-mini {
+      font-size: 0.72rem;
+      color: #718096;
+      font-weight: 500;
+    }
+
+    /* Master Action Button */
+    .action-sector {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 36px;
+    }
+
+    .btn-open-case {
+      position: relative;
+      background: linear-gradient(180deg, #f6c85b 0%, #d49520 100%);
+      color: #12151e;
+      border: none;
+      padding: 18px 64px;
+      font-family: 'Cabinet Grotesk', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 
+        0 14px 34px rgba(212, 149, 32, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.45);
+      transition: all 0.16s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-open-case:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 
+        0 18px 40px rgba(212, 149, 32, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      background: linear-gradient(180deg, #ffcf68 0%, #dd9e28 100%);
+    }
+
+    .btn-open-case:active:not(:disabled) {
+      transform: translateY(1px);
+      box-shadow: 0 8px 18px rgba(212, 149, 32, 0.3);
+    }
+
+    .btn-open-case:disabled {
+      background: #252a38;
+      color: #60687e;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .hotkey-prompt {
+      font-size: 0.78rem;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .key-badge {
+      background: #191e2b;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: #cbd5e1;
+    }
+
+    /* Prize Odds Grid (Bottom Bar) */
+    .odds-summary-panel {
+      width: 100%;
+      max-width: 980px;
+      background: #11141e;
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 18px 24px;
+      margin-bottom: 26px;
+    }
+
+    .odds-summary-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .odds-summary-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #828fa6;
+    }
+
+    .odds-chips-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+      gap: 10px;
+    }
+
+    .odds-chip {
+      background: #151926;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .odds-chip-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .odds-thumb-mini {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .rarity-indicator-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .odds-chip-name {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #e2e8f0;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    .odds-chip-pct {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    /* History Journal */
+    .history-section {
+      width: 100%;
+      max-width: 980px;
+      background: #11141e;
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 20px 24px;
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .history-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #828fa6;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .history-tools {
+      display: flex;
+      gap: 8px;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    .data-table th {
+      text-align: left;
+      padding: 8px 12px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #64748b;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .data-table td {
+      padding: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      color: #cbd5e1;
+    }
+
+    .empty-history-cell {
+      text-align: center;
+      padding: 32px 12px;
+      color: #475569;
+      font-size: 0.86rem;
+    }
+
+    /* Winner Showcase Modal (CS2 Unboxing style) */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(6, 8, 13, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .winner-pedestal {
+      position: relative;
+      width: 90%;
+      max-width: 480px;
+      background: linear-gradient(180deg, #161b28 0%, #0e111a 100%);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 36px 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9);
+      transform: scale(0.92) translateY(20px);
+      transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+    }
+
+    .modal-overlay.active .winner-pedestal {
+      transform: scale(1) translateY(0);
+    }
+
+    .modal-pretitle {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 4px;
+      z-index: 1;
+    }
+
+    .modal-student-name {
+      font-family: 'Cabinet Grotesk', sans-serif;
+      font-size: 1.45rem;
+      font-weight: 900;
+      color: #ffffff;
+      margin-bottom: 20px;
+      z-index: 1;
+    }
+
+    .winner-hero-box {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 26px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 1;
+      position: relative;
+    }
+
+    .winner-artwork-large {
+      width: 140px;
+      height: 140px;
+      margin-bottom: 16px;
+      filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.6));
+      animation: heroFloat 3.5s ease-in-out infinite;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .winner-artwork-large img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 12px;
+    }
+
+    @keyframes heroFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-7px); }
+    }
+
+    .winner-hero-title {
+      font-family: 'Cabinet Grotesk', sans-serif;
+      font-size: 1.75rem;
+      font-weight: 900;
+      letter-spacing: 0.3px;
+      margin-bottom: 6px;
+    }
+
+    .winner-hero-desc {
+      font-size: 0.88rem;
+      color: #94a3b8;
+      max-width: 320px;
+      line-height: 1.4;
+    }
+
+    .btn-claim-reward {
+      width: 100%;
+      padding: 15px;
+      font-family: 'Cabinet Grotesk', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 900;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 12px;
+      background: #ffffff;
+      color: #0b0e14;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(255, 255, 255, 0.15);
+      transition: all 0.18s ease;
+      z-index: 1;
+    }
+
+    .btn-claim-reward:hover {
+      background: #f1f5f9;
+      transform: translateY(-2px);
+      box-shadow: 0 14px 30px rgba(255, 255, 255, 0.25);
+    }
+
+    /* Teacher Drawer / Settings Modal */
+    .settings-drawer {
+      position: relative;
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      background: #121622;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 26px 28px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.85);
+    }
+
+    .settings-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .settings-title {
+      font-family: 'Cabinet Grotesk', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 900;
+    }
+
+    .setting-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #171c2b;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      gap: 12px;
+    }
+
+    .setting-preview-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      background: #0f131e;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .setting-preview-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .setting-item-info {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .setting-item-name {
+      font-size: 0.9rem;
+      font-weight: 700;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    .setting-btn-upload {
+      background: #202738;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #94a3b8;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 5px 9px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .setting-btn-upload:hover {
+      background: #2a3349;
+      color: #ffffff;
+    }
+
+    .setting-input-pct {
+      background: #0d101a;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      padding: 6px 8px;
+      width: 60px;
+      text-align: center;
+      border-radius: 6px;
+    }
+
+    .rig-select-box {
+      width: 100%;
+      background: #0d101a;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      margin-top: 6px;
+    }
+
+    /* Confetti Canvas */
+    #confettiCanvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    @media (max-width: 768px) {
+      :root {
+        --card-w: 160px;
+        --card-h: 235px;
+      }
+      .roulette-viewport { height: 270px; }
+      .case-title { font-size: 1.1rem; }
+      .btn-open-case { font-size: 1.15rem; padding: 14px 44px; }
+      .prize-img-render, .prize-svg-render { width: 84px; height: 84px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop-fx"></div>
+  <canvas id="confettiCanvas"></canvas>
+
+  <!-- Navigation Header -->
+  <header>
+    <div class="case-identity">
+      <div class="case-icon-box">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f6c85b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+          <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+      </div>
+      <div>
+        <div class="case-title">
+          Кейс «Школьный Арсенал»
+          <span class="case-tag">СЕРИЯ 1</span>
+        </div>
+        <div class="case-subtitle">Мотивационный контейнер &middot; Система случайных наград</div>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <button class="pill-btn icon-only" id="soundBtn" title="Переключить звук">
+        <svg id="soundIconOn" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </svg>
+        <svg id="soundIconOff" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <line x1="23" y1="9" x2="17" y2="15"></line>
+          <line x1="17" y1="9" x2="23" y2="15"></line>
+        </svg>
+      </button>
+
+      <button class="pill-btn icon-only" id="fsBtn" title="На весь экран">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <polyline points="9 21 3 21 3 15"></polyline>
+          <line x1="21" y1="3" x2="14" y2="10"></line>
+          <line x1="3" y1="21" x2="10" y2="14"></line>
+        </svg>
+      </button>
+
+      <button class="pill-btn" id="teacherSettingsBtn" title="Панель учителя">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span>Учитель</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <!-- Student Name Plate -->
+    <div class="student-bar-wrapper">
+      <span class="student-label">Ученик:</span>
+      <input type="text" class="student-input" id="studentInput" placeholder="Введите имя ученика или оставьте пустым" autocomplete="off" spellcheck="false">
+      <button class="student-clear-btn" id="studentClearBtn" title="Очистить">&times;</button>
+    </div>
+
+    <!-- Roulette Cinema Box -->
+    <div class="roulette-viewport" id="rouletteViewport">
+      <div class="target-reticle"></div>
+      <div class="reticle-arrow-top"></div>
+      <div class="reticle-arrow-bottom"></div>
+      <div class="edge-shadow-left"></div>
+      <div class="edge-shadow-right"></div>
+      <div class="reel-strip" id="reelStrip">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- Action Section -->
+    <div class="action-sector">
+      <button class="btn-open-case" id="openCaseBtn">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        </svg>
+        Открыть кейс
+      </button>
+      <div class="hotkey-prompt">
+        или нажмите <span class="key-badge">Пробел</span> на клавиатуре
+      </div>
+    </div>
+
+    <!-- Fixed Verified Odds Grid -->
+    <div class="odds-summary-panel">
+      <div class="odds-summary-head">
+        <span class="odds-summary-title">Содержимое кейса &middot; Официальные вероятности</span>
+        <span style="font-family:'JetBrains Mono', monospace; font-size:0.75rem; color:#64748b;">TOTAL: 100%</span>
+      </div>
+      <div class="odds-chips-row" id="oddsChipsRow">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- History Journal -->
+    <div class="history-section">
+      <div class="history-header">
+        <div class="history-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+          Журнал выданных наград
+        </div>
+        <div class="history-tools">
+          <button class="pill-btn" style="height:34px; padding:0 10px; font-size:0.75rem;" id="copyHistoryBtn">Копировать</button>
+          <button class="pill-btn" style="height:34px; padding:0 10px; font-size:0.75rem;" id="clearHistoryBtn">Очистить</button>
+        </div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Время</th>
+            <th>Ученик</th>
+            <th>Награда</th>
+            <th>Класс Редкости</th>
+          </tr>
+        </thead>
+        <tbody id="historyTbody">
+          <tr>
+            <td colspan="4" class="empty-history-cell">На этом уроке кейс еще не открывали</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Winner Showcase Modal -->
+  <div class="modal-overlay" id="winnerModal">
+    <div class="winner-pedestal" id="winnerPedestal">
+      <div class="modal-pretitle">ВЫПАВШИЙ ПРЕДМЕТ</div>
+      <div class="modal-student-name" id="winnerStudentName">Поздравляем!</div>
+
+      <div class="winner-hero-box" id="winnerHeroBox">
+        <div class="winner-artwork-large" id="winnerArtwork"></div>
+        <div class="winner-hero-title" id="winnerTitle">Пять в журнал</div>
+        <div class="winner-hero-desc" id="winnerDesc">Отличный результат на уроке!</div>
+      </div>
+
+      <button class="btn-claim-reward" id="claimRewardBtn">Забрать в журнал</button>
+    </div>
+  </div>
+
+  <!-- Teacher Settings Modal -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="settings-drawer">
+      <div class="settings-header">
+        <div>
+          <div class="settings-title">⚙️ Настройки и иконки кейса</div>
+          <div style="font-size:0.76rem; color:#64748b;">Вы можете загрузить свои картинки или положить в папку images/</div>
+        </div>
+        <button class="pill-btn icon-only" id="closeSettingsBtn" style="border-radius:50%; width:34px; height:34px;">&times;</button>
+      </div>
+
+      <div id="settingsChancesContainer"></div>
+
+      <div style="margin-top: 18px; margin-bottom: 22px;">
+        <label style="font-size:0.8rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.8px;">🎯 Секретный следующий приз (принудительно):</label>
+        <select class="rig-select-box" id="rigSelectBox">
+          <option value="">Честный случайный выбор (по шансам)</option>
+        </select>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <button class="pill-btn" id="resetDefaultsBtn">Сброс шансов (15% / 5%)</button>
+        <button class="btn-open-case" style="padding:10px 24px; font-size:1rem;" id="saveSettingsBtn">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden File Input for Image Uploading -->
+  <input type="file" id="hiddenFileInput" accept="image/*" style="display:none;">
+
+  <script>
+    /* ==========================================================================
+       1. Prize Definitions with 3D Vector Badges (And Custom Image Support)
+       ========================================================================== */
+    const DEFAULT_CONFIG = [
+      {
+        id: 'cancel_2',
+        title: 'Отмена двойки',
+        rarity: 'covert',
+        tierName: 'Экстра-редкое',
+        color: '#eb4b4b',
+        chance: 5, // 5%
+        desc: 'Иммунитет от полученной двойки или её мгновенное аннулирование.',
+        svg: `<svg viewBox="0 0 120 120" fill="none">
+          <defs>
+            <linearGradient id="c2_shield" x1="20" y1="10" x2="100" y2="110" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#ff4d4d"/>
+              <stop offset="0.5" stop-color="#dc2626"/>
+              <stop offset="1" stop-color="#7f1d1d"/>
+            </linearGradient>
+            <linearGradient id="c2_rim" x1="15" y1="8" x2="105" y2="112" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#fecaca"/>
+              <stop offset="0.5" stop-color="#ef4444"/>
+              <stop offset="1" stop-color="#450a0a"/>
+            </linearGradient>
+            <linearGradient id="c2_cross" x1="30" y1="30" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#ffffff"/>
+              <stop offset="1" stop-color="#fca5a5"/>
+            </linearGradient>
+            <filter id="c2_shadow" x="0" y="0" width="120" height="120" filterUnits="userSpaceOnUse">
+              <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#eb4b4b" flood-opacity="0.55"/>
+            </filter>
+          </defs>
+          <path d="M60 8L98 22V56C98 82 82 102 60 112C38 102 22 82 22 56V22L60 8Z" fill="url(#c2_rim)" filter="url(#c2_shadow)"/>
+          <path d="M60 13L93 25V55C93 78 79 96 60 105C41 96 27 78 27 55V25L60 13Z" fill="url(#c2_shield)"/>
+          <!-- Inner Core Badge -->
+          <circle cx="60" cy="58" r="26" fill="#180404" stroke="#ef4444" stroke-width="2"/>
+          <text x="60" y="69" font-family="'Cabinet Grotesk', sans-serif" font-size="34" font-weight="900" fill="#f87171" text-anchor="middle">2</text>
+          <!-- Neon Slash Beam -->
+          <line x1="38" y1="80" x2="82" y2="36" stroke="url(#c2_cross)" stroke-width="6" stroke-linecap="round"/>
+          <line x1="38" y1="80" x2="82" y2="36" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>`
+      },
+      {
+        id: 'grade_5',
+        title: 'Пять в журнал',
+        rarity: 'gold',
+        tierName: 'Золотое',
+        color: '#e4ae39',
+        chance: 15, // 15%
+        desc: 'Высший балл «5» безоговорочно выставляется в электронный журнал!',
+        svg: `<svg viewBox="0 0 120 120" fill="none">
+          <defs>
+            <linearGradient id="g5_gold" x1="15" y1="10" x2="105" y2="110" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#fffbeb"/>
+              <stop offset="0.3" stop-color="#fde047"/>
+              <stop offset="0.7" stop-color="#d97706"/>
+              <stop offset="1" stop-color="#78350f"/>
+            </linearGradient>
+            <linearGradient id="g5_star" x1="20" y1="15" x2="100" y2="105" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#fef08a"/>
+              <stop offset="0.6" stop-color="#f59e0b"/>
+              <stop offset="1" stop-color="#b45309"/>
+            </linearGradient>
+            <filter id="g5_glow" x="0" y="0" width="120" height="120" filterUnits="userSpaceOnUse">
+              <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#e4ae39" flood-opacity="0.65"/>
+            </filter>
+          </defs>
+          <!-- Laurel Medallion -->
+          <circle cx="60" cy="60" r="46" fill="#1c160c" stroke="url(#g5_gold)" stroke-width="3" filter="url(#g5_glow)"/>
+          <circle cx="60" cy="60" r="38" fill="url(#g5_gold)" stroke="#fef08a" stroke-width="1.5"/>
+          <!-- Star Shape Behind 5 -->
+          <polygon points="60 22 69 42 91 44 74 58 79 80 60 68 41 80 46 58 29 44 51 42" fill="url(#g5_star)" stroke="#ffffff" stroke-width="1"/>
+          <!-- Embossed '5' -->
+          <text x="60" y="73" font-family="'Cabinet Grotesk', sans-serif" font-size="44" font-weight="900" fill="#451a03" text-anchor="middle">5</text>
+        </svg>`
+      },
+      {
+        id: 'plus_1',
+        title: '+1 балл к ответу',
+        rarity: 'classified',
+        tierName: 'Засекреченное',
+        color: '#d32ce6',
+        chance: 25, // 25%
+        desc: 'Повышает оценку за текущую проверочную работу или ответ на 1 балл.',
+        svg: `<svg viewBox="0 0 120 120" fill="none">
+          <defs>
+            <linearGradient id="p1_cube" x1="20" y1="15" x2="100" y2="105" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#f472b6"/>
+              <stop offset="0.5" stop-color="#c026d3"/>
+              <stop offset="1" stop-color="#581c87"/>
+            </linearGradient>
+            <linearGradient id="p1_rim" x1="15" y1="10" x2="105" y2="110" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#fdf2f8"/>
+              <stop offset="1" stop-color="#a21caf"/>
+            </linearGradient>
+            <filter id="p1_glow" x="0" y="0" width="120" height="120" filterUnits="userSpaceOnUse">
+              <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#d32ce6" flood-opacity="0.55"/>
+            </filter>
+          </defs>
+          <rect x="22" y="22" width="76" height="76" rx="22" fill="url(#p1_cube)" stroke="url(#p1_rim)" stroke-width="3" filter="url(#p1_glow)"/>
+          <rect x="28" y="28" width="64" height="64" rx="16" fill="#180720" opacity="0.6"/>
+          <!-- Neon 3D Diamond / Plus -->
+          <path d="M60 38V82M38 60H82" stroke="#ffffff" stroke-width="8" stroke-linecap="round"/>
+          <path d="M60 38V82M38 60H82" stroke="#f472b6" stroke-width="3.5" stroke-linecap="round"/>
+        </svg>`
+      },
+      {
+        id: 'cancel_hw',
+        title: 'Отмена Д/З',
+        rarity: 'restricted',
+        tierName: 'Армейское',
+        color: '#4b69ff',
+        chance: 25, // 25%
+        desc: 'Официальный пропуск одного домашнего задания без потери баллов!',
+        svg: `<svg viewBox="0 0 120 120" fill="none">
+          <defs>
+            <linearGradient id="hw_dossier" x1="25" y1="15" x2="95" y2="105" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#60a5fa"/>
+              <stop offset="0.6" stop-color="#2563eb"/>
+              <stop offset="1" stop-color="#1e3a8a"/>
+            </linearGradient>
+            <linearGradient id="hw_stamp" x1="50" y1="60" x2="95" y2="95" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#ef4444"/>
+              <stop offset="1" stop-color="#991b1b"/>
+            </linearGradient>
+            <filter id="hw_glow" x="0" y="0" width="120" height="120" filterUnits="userSpaceOnUse">
+              <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#4b69ff" flood-opacity="0.5"/>
+            </filter>
+          </defs>
+          <!-- Document Dossier -->
+          <rect x="28" y="16" width="64" height="88" rx="12" fill="url(#hw_dossier)" stroke="#93c5fd" stroke-width="2.5" filter="url(#hw_glow)"/>
+          <rect x="34" y="24" width="52" height="72" rx="6" fill="#0f172a" opacity="0.65"/>
+          <line x1="42" y1="36" x2="78" y2="36" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>
+          <line x1="42" y1="48" x2="72" y2="48" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>
+          <line x1="42" y1="60" x2="65" y2="60" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>
+          <!-- Stamp 'VOID / PASSED' -->
+          <circle cx="76" cy="80" r="16" fill="url(#hw_stamp)" stroke="#fca5a5" stroke-width="2"/>
+          <line x1="68" y1="80" x2="84" y2="80" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+        </svg>`
+      },
+      {
+        id: 'friend_help',
+        title: 'Помощь друга',
+        rarity: 'mil-spec',
+        tierName: 'Ширпотреб',
+        color: '#5e98d9',
+        chance: 30, // 30%
+        desc: 'Возможность передать сложный вопрос соседу по парте или другу.',
+        svg: `<svg viewBox="0 0 120 120" fill="none">
+          <defs>
+            <linearGradient id="fh_shield" x1="20" y1="20" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#93c5fd"/>
+              <stop offset="0.5" stop-color="#3b82f6"/>
+              <stop offset="1" stop-color="#1e40af"/>
+            </linearGradient>
+            <filter id="fh_glow" x="0" y="0" width="120" height="120" filterUnits="userSpaceOnUse">
+              <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#5e98d9" flood-opacity="0.45"/>
+            </filter>
+          </defs>
+          <circle cx="60" cy="60" r="46" fill="#0f172a" stroke="url(#fh_shield)" stroke-width="3" filter="url(#fh_glow)"/>
+          <circle cx="46" cy="48" r="14" fill="url(#fh_shield)"/>
+          <circle cx="74" cy="52" r="12" fill="#60a5fa" opacity="0.85"/>
+          <path d="M26 88C26 72 36 68 46 68C56 68 64 72 64 88" fill="url(#fh_shield)"/>
+          <path d="M60 88C60 76 68 72 76 72C84 72 94 76 94 88" fill="#3b82f6" opacity="0.85"/>
+        </svg>`
+      }
+    ];
+
+    let prizes = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    let nextRiggedId = "";
+    let isSpinning = false;
+    let soundMuted = false;
+    let awardHistory = [];
+    let uploadTargetPrizeId = null;
+
+    // DOM References
+    const reelStrip = document.getElementById('reelStrip');
+    const rouletteViewport = document.getElementById('rouletteViewport');
+    const openCaseBtn = document.getElementById('openCaseBtn');
+    const studentInput = document.getElementById('studentInput');
+    const studentClearBtn = document.getElementById('studentClearBtn');
+    const oddsChipsRow = document.getElementById('oddsChipsRow');
+    const historyTbody = document.getElementById('historyTbody');
+    const copyHistoryBtn = document.getElementById('copyHistoryBtn');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+    const soundBtn = document.getElementById('soundBtn');
+    const soundIconOn = document.getElementById('soundIconOn');
+    const soundIconOff = document.getElementById('soundIconOff');
+    const fsBtn = document.getElementById('fsBtn');
+    const teacherSettingsBtn = document.getElementById('teacherSettingsBtn');
+    const settingsModal = document.getElementById('settingsModal');
+    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+    const settingsChancesContainer = document.getElementById('settingsChancesContainer');
+    const rigSelectBox = document.getElementById('rigSelectBox');
+    const resetDefaultsBtn = document.getElementById('resetDefaultsBtn');
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    const hiddenFileInput = document.getElementById('hiddenFileInput');
+    const winnerModal = document.getElementById('winnerModal');
+    const winnerPedestal = document.getElementById('winnerPedestal');
+    const winnerStudentName = document.getElementById('winnerStudentName');
+    const winnerHeroBox = document.getElementById('winnerHeroBox');
+    const winnerArtwork = document.getElementById('winnerArtwork');
+    const winnerTitle = document.getElementById('winnerTitle');
+    const winnerDesc = document.getElementById('winnerDesc');
+    const claimRewardBtn = document.getElementById('claimRewardBtn');
+
+    /* ==========================================================================
+       2. Image Management (Custom Photos + Auto-Fallback)
+       ========================================================================== */
+    function getPrizeImageSrc(prizeId) {
+      // 1. Check user uploaded in localStorage
+      const uploaded = localStorage.getItem('schoolcase_img_' + prizeId);
+      if (uploaded) return uploaded;
+      // 2. Default relative image file in images/ folder
+      return `images/${prizeId}.png`;
+    }
+
+    function renderArtworkMarkup(prize, isLarge = false) {
+      const src = getPrizeImageSrc(prize.id);
+      const imgClass = isLarge ? 'winner-artwork-large' : 'prize-img-render';
+      const svgClass = isLarge ? 'winner-artwork-large' : 'prize-svg-render';
+
+      // Renders SVG by default, and seamlessly replaces with custom image once loaded
+      return `
+        <div class="prize-artwork-box">
+          <div class="${svgClass}">
+            ${prize.svg}
+          </div>
+          <img class="${imgClass}" src="${src}" style="display:none;" 
+               onload="this.style.display='block'; this.previousElementSibling.style.display='none';" 
+               onerror="this.style.display='none'; this.previousElementSibling.style.display='flex';" 
+               alt="${prize.title}">
+        </div>
+      `;
+    }
+
+    /* ==========================================================================
+       3. Real-Time Web Audio Synthesizer (Mechanical Ratchet + Bass Impact)
+       ========================================================================== */
+    let audioContext = null;
+
+    function ensureAudioContext() {
+      if (!audioContext) {
+        const AudioClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioClass) audioContext = new AudioClass();
+      }
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+    }
+
+    function playWheelClick(speedRatio = 1) {
+      if (soundMuted || !audioContext) return;
+      try {
+        const t = audioContext.currentTime;
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        
+        osc.type = 'triangle';
+        const startFreq = 780 + Math.random() * 120;
+        osc.frequency.setValueAtTime(startFreq, t);
+        osc.frequency.exponentialRampToValueAtTime(80, t + 0.024);
+
+        const vol = 0.22 * Math.min(1.2, speedRatio);
+        gain.gain.setValueAtTime(vol, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.024);
+
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+
+        osc.start(t);
+        osc.stop(t + 0.026);
+      } catch (err) {}
+    }
+
+    function playWinSound(rarity) {
+      if (soundMuted || !audioContext) return;
+      try {
+        const t = audioContext.currentTime;
+
+        // Sub-bass impact thud
+        const subOsc = audioContext.createOscillator();
+        const subGain = audioContext.createGain();
+        subOsc.type = 'sine';
+        subOsc.frequency.setValueAtTime(110, t);
+        subOsc.frequency.exponentialRampToValueAtTime(32, t + 0.45);
+
+        subGain.gain.setValueAtTime(0.4, t);
+        subGain.gain.exponentialRampToValueAtTime(0.001, t + 0.48);
+
+        subOsc.connect(subGain);
+        subGain.connect(audioContext.destination);
+
+        subOsc.start(t);
+        subOsc.stop(t + 0.5);
+
+        // Fanfare Chords
+        const notes = rarity === 'covert' || rarity === 'gold' 
+          ? [523.25, 659.25, 783.99, 1046.50, 1318.51] 
+          : [440.00, 554.37, 659.25, 880.00];
+
+        notes.forEach((freq, idx) => {
+          const osc = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          osc.type = rarity === 'covert' ? 'sawtooth' : 'triangle';
+          osc.frequency.setValueAtTime(freq, t + 0.05 + idx * 0.08);
+
+          gain.gain.setValueAtTime(0.001, t + 0.05 + idx * 0.08);
+          gain.gain.linearRampToValueAtTime(0.2, t + 0.05 + idx * 0.08 + 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05 + idx * 0.08 + 1.2);
+
+          osc.connect(gain);
+          gain.connect(audioContext.destination);
+
+          osc.start(t + 0.05 + idx * 0.08);
+          osc.stop(t + 0.05 + idx * 0.08 + 1.25);
+        });
+      } catch (err) {}
+    }
+
+    /* ==========================================================================
+       4. Physics Confetti Particle Engine (Canvas)
+       ========================================================================== */
+    const canvas = document.getElementById('confettiCanvas');
+    const ctx = canvas.getContext('2d');
+    let confetti = [];
+    let confettiAnim = null;
+
+    function fitCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', fitCanvas);
+    fitCanvas();
+
+    function triggerConfetti(mainColor) {
+      confetti = [];
+      const palette = [mainColor, '#ffffff', '#e4ae39', '#eb4b4b', '#d32ce6', '#4b69ff'];
+      for (let i = 0; i < 150; i++) {
+        confetti.push({
+          x: canvas.width / 2 + (Math.random() * 160 - 80),
+          y: canvas.height * 0.42,
+          vx: (Math.random() - 0.5) * 20,
+          vy: (Math.random() - 0.7) * 22 - 3,
+          size: Math.random() * 7 + 5,
+          color: palette[Math.floor(Math.random() * palette.length)],
+          rotation: Math.random() * 360,
+          rotSpeed: (Math.random() - 0.5) * 14,
+          opacity: 1,
+          gravity: 0.42,
+          drag: 0.965
+        });
+      }
+      if (confettiAnim) cancelAnimationFrame(confettiAnim);
+      stepConfetti();
+    }
+
+    function stepConfetti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = 0;
+
+      for (let p of confetti) {
+        p.vx *= p.drag;
+        p.vy *= p.drag;
+        p.vy += p.gravity;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rotation += p.rotSpeed;
+        p.opacity -= 0.007;
+
+        if (p.opacity > 0 && p.y < canvas.height + 40) {
+          alive++;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.globalAlpha = Math.max(0, p.opacity);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.65);
+          ctx.restore();
+        }
+      }
+
+      if (alive > 0) confettiAnim = requestAnimationFrame(stepConfetti);
+      else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    /* ==========================================================================
+       5. Roulette Mechanics & Precision Physics
+       ========================================================================== */
+    function pickPrize() {
+      if (nextRiggedId) {
+        const found = prizes.find(p => p.id === nextRiggedId);
+        nextRiggedId = "";
+        rigSelectBox.value = "";
+        if (found) return found;
+      }
+
+      const totalWeight = prizes.reduce((sum, p) => sum + p.chance, 0);
+      let rand = Math.random() * totalWeight;
+
+      for (let p of prizes) {
+        if (rand < p.chance) return p;
+        rand -= p.chance;
+      }
+      return prizes[prizes.length - 1];
+    }
+
+    function renderCardNode(prize) {
+      const card = document.createElement('div');
+      card.className = 'item-card';
+      card.setAttribute('data-rarity', prize.rarity);
+      card.innerHTML = `
+        <div class="item-card-top">
+          <span class="item-tier-badge">${prize.tierName}</span>
+          <span class="item-chance-badge">${prize.chance}%</span>
+        </div>
+        ${renderArtworkMarkup(prize, false)}
+        <div class="item-card-info">
+          <div class="item-title">${prize.title}</div>
+          <div class="item-desc-mini">${prize.chance}% шанс</div>
+        </div>
+      `;
+      return card;
+    }
+
+    function initReel() {
+      reelStrip.innerHTML = '';
+      for (let i = 0; i < 28; i++) {
+        const randomP = prizes[Math.floor(Math.random() * prizes.length)];
+        reelStrip.appendChild(renderCardNode(randomP));
+      }
+      reelStrip.style.transform = 'translateX(0px)';
+      reelStrip.style.transition = 'none';
+    }
+
+    function executeSpin() {
+      if (isSpinning) return;
+      ensureAudioContext();
+
+      isSpinning = true;
+      openCaseBtn.disabled = true;
+
+      const winningPrize = pickPrize();
+
+      const totalItems = 65;
+      const targetIndex = 52;
+      const stripPrizes = [];
+
+      for (let i = 0; i < totalItems; i++) {
+        if (i === targetIndex) {
+          stripPrizes.push(winningPrize);
+        } else {
+          stripPrizes.push(prizes[Math.floor(Math.random() * prizes.length)]);
+        }
+      }
+
+      reelStrip.innerHTML = '';
+      stripPrizes.forEach(p => reelStrip.appendChild(renderCardNode(p)));
+
+      // Calculate geometry
+      const sample = reelStrip.children[0];
+      const cardWidth = sample.offsetWidth;
+      const style = window.getComputedStyle(reelStrip);
+      const gap = parseFloat(style.gap) || 12;
+      const cardStep = cardWidth + gap;
+      const viewportWidth = rouletteViewport.offsetWidth;
+      const centerLine = viewportWidth / 2;
+
+      // Organic landing jitter (remains within card boundary)
+      const jitter = (Math.random() - 0.5) * (cardWidth * 0.65);
+      const destinationTranslate = -( (targetIndex * cardStep) + (cardWidth / 2) + jitter - centerLine );
+
+      // Reset
+      reelStrip.style.transition = 'none';
+      reelStrip.style.transform = 'translateX(0px)';
+      reelStrip.getBoundingClientRect(); // reflow
+
+      // Spin kinematics (6.6s easing)
+      const spinTime = 6.6;
+      reelStrip.style.transition = `transform ${spinTime}s cubic-bezier(0.12, 0.85, 0.18, 1.0)`;
+      reelStrip.style.transform = `translateX(${destinationTranslate}px)`;
+
+      // Dynamic Audio Ticks
+      const startTime = performance.now();
+      let lastCrossed = Math.floor(centerLine / cardStep);
+
+      function monitorTicks(time) {
+        if (!isSpinning) return;
+        const elapsed = (time - startTime) / 1000;
+        
+        let curX = 0;
+        try {
+          const trans = window.getComputedStyle(reelStrip).transform;
+          if (window.DOMMatrixReadOnly) {
+            curX = Math.abs(new DOMMatrixReadOnly(trans).m41);
+          } else if (window.WebKitCSSMatrix) {
+            curX = Math.abs(new WebKitCSSMatrix(trans).m41);
+          }
+        } catch (e) {}
+
+        const passed = Math.floor((curX + centerLine) / cardStep);
+        if (passed > lastCrossed && passed <= targetIndex) {
+          lastCrossed = passed;
+          const ratio = Math.max(0.4, 1.2 - (elapsed / spinTime));
+          playWheelClick(ratio);
+        }
+
+        if (elapsed < spinTime) {
+          requestAnimationFrame(monitorTicks);
+        }
+      }
+      requestAnimationFrame(monitorTicks);
+
+      // Finish event
+      setTimeout(() => {
+        isSpinning = false;
+        openCaseBtn.disabled = false;
+
+        playWinSound(winningPrize.rarity);
+        triggerConfetti(winningPrize.color);
+
+        const student = studentInput.value.trim() || 'Ученик';
+        logToHistory(student, winningPrize);
+        presentWinner(student, winningPrize);
+      }, spinTime * 1000 + 120);
+    }
+
+    /* ==========================================================================
+       6. Winner Display & History Journal
+       ========================================================================== */
+    function presentWinner(student, prize) {
+      winnerStudentName.textContent = student ? `Награда для: ${student}` : 'Выиграна ценная награда!';
+      winnerTitle.textContent = prize.title;
+      winnerTitle.style.color = prize.color;
+      winnerDesc.textContent = prize.desc;
+      winnerArtwork.innerHTML = renderArtworkMarkup(prize, true);
+
+      winnerHeroBox.style.borderColor = prize.color;
+      winnerHeroBox.style.boxShadow = `0 10px 30px ${prize.color}22`;
+      winnerModal.classList.add('active');
+    }
+
+    claimRewardBtn.addEventListener('click', () => {
+      winnerModal.classList.remove('active');
+    });
+
+    winnerModal.addEventListener('click', (e) => {
+      if (e.target === winnerModal) winnerModal.classList.remove('active');
+    });
+
+    function logToHistory(student, prize) {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      awardHistory.unshift({
+        time: timeStr,
+        student: student,
+        title: prize.title,
+        tierName: prize.tierName,
+        color: prize.color
+      });
+
+      renderHistoryTable();
+    }
+
+    function renderHistoryTable() {
+      if (awardHistory.length === 0) {
+        historyTbody.innerHTML = `<tr><td colspan="4" class="empty-history-cell">На этом уроке кейс еще не открывали</td></tr>`;
+        return;
+      }
+
+      historyTbody.innerHTML = awardHistory.map(row => `
+        <tr>
+          <td style="font-family:'JetBrains Mono', monospace; font-size:0.75rem; color:#64748b;">${row.time}</td>
+          <td style="font-weight:700; color:#ffffff;">${escapeText(row.student)}</td>
+          <td style="font-weight:800; color:${row.color};">${escapeText(row.title)}</td>
+          <td><span style="font-family:'JetBrains Mono', monospace; font-size:0.7rem; font-weight:700; color:${row.color}; background:rgba(255,255,255,0.05); padding:3px 8px; border-radius:4px;">${row.tierName}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function escapeText(str) {
+      return str.replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[m]);
+    }
+
+    clearHistoryBtn.addEventListener('click', () => {
+      if (confirm('Очистить журнал выданных наград?')) {
+        awardHistory = [];
+        renderHistoryTable();
+      }
+    });
+
+    copyHistoryBtn.addEventListener('click', () => {
+      if (awardHistory.length === 0) return alert('Журнал пока пуст!');
+      const summary = awardHistory.map(h => `[${h.time}] ${h.student} -> ${h.title} (${h.tierName})`).join('\n');
+      navigator.clipboard.writeText(summary).then(() => {
+        const orig = copyHistoryBtn.textContent;
+        copyHistoryBtn.textContent = '✓ Скопировано';
+        setTimeout(() => copyHistoryBtn.textContent = orig, 1800);
+      });
+    });
+
+    /* ==========================================================================
+       7. Odds Chips & Teacher Custom Image Uploading
+       ========================================================================== */
+    function renderOddsChips() {
+      oddsChipsRow.innerHTML = prizes.map(p => `
+        <div class="odds-chip">
+          <div class="odds-chip-left">
+            <img class="odds-thumb-mini" src="${getPrizeImageSrc(p.id)}" onerror="this.style.display='none'">
+            <div class="rarity-indicator-dot" style="background:${p.color}; box-shadow:0 0 6px ${p.color};"></div>
+            <span class="odds-chip-name" title="${p.title}">${p.title}</span>
+          </div>
+          <span class="odds-chip-pct" style="color:${p.color};">${p.chance}%</span>
+        </div>
+      `).join('');
+    }
+
+    function buildTeacherSettings() {
+      settingsChancesContainer.innerHTML = prizes.map(p => {
+        const customImg = localStorage.getItem('schoolcase_img_' + p.id);
+        const hasCustom = !!customImg;
+        return `
+          <div class="setting-item-row">
+            <div class="setting-preview-box">
+              <img src="${getPrizeImageSrc(p.id)}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\'><circle cx=\\'12\\' cy=\\'12\\' r=\\'10\\' fill=\\'%23252b3b\\'/></svg>'">
+            </div>
+            <div class="setting-item-info">
+              <div class="setting-item-name" style="color:${p.color}">${p.title}</div>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <button class="setting-btn-upload" onclick="triggerUpload('${p.id}')">
+                  📁 Загрузить фото
+                </button>
+                ${hasCustom ? `<button class="setting-btn-upload" style="color:#f87171;" onclick="resetCustomImg('${p.id}')">✕ Сбросить</button>` : ''}
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:5px;">
+              <input type="number" min="1" max="100" class="setting-input-pct" data-id="${p.id}" value="${p.chance}">
+              <span style="font-family:'JetBrains Mono', monospace; color:#64748b; font-size:0.8rem;">%</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      rigSelectBox.innerHTML = `<option value="">Честный случайный выбор (по шансам)</option>` + 
+        prizes.map(p => `<option value="${p.id}">${p.title} (${p.chance}%)</option>`).join('');
+      rigSelectBox.value = nextRiggedId;
+    }
+
+    window.triggerUpload = function(prizeId) {
+      uploadTargetPrizeId = prizeId;
+      hiddenFileInput.value = '';
+      hiddenFileInput.click();
+    };
+
+    window.resetCustomImg = function(prizeId) {
+      localStorage.removeItem('schoolcase_img_' + prizeId);
+      buildTeacherSettings();
+      renderOddsChips();
+      initReel();
+    };
+
+    hiddenFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file && uploadTargetPrizeId) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          localStorage.setItem('schoolcase_img_' + uploadTargetPrizeId, evt.target.result);
+          buildTeacherSettings();
+          renderOddsChips();
+          initReel();
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    teacherSettingsBtn.addEventListener('click', () => {
+      buildTeacherSettings();
+      settingsModal.classList.add('active');
+    });
+
+    closeSettingsBtn.addEventListener('click', () => {
+      settingsModal.classList.remove('active');
+    });
+
+    settingsModal.addEventListener('click', (e) => {
+      if (e.target === settingsModal) settingsModal.classList.remove('active');
+    });
+
+    resetDefaultsBtn.addEventListener('click', () => {
+      prizes = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+      nextRiggedId = "";
+      buildTeacherSettings();
+      renderOddsChips();
+      initReel();
+    });
+
+    saveSettingsBtn.addEventListener('click', () => {
+      const inputs = settingsChancesContainer.querySelectorAll('.setting-input-pct');
+      inputs.forEach(inp => {
+        const id = inp.dataset.id;
+        const val = parseInt(inp.value, 10);
+        const p = prizes.find(x => x.id === id);
+        if (p && !isNaN(val) && val > 0) p.chance = val;
+      });
+
+      nextRiggedId = rigSelectBox.value;
+      renderOddsChips();
+      initReel();
+      settingsModal.classList.remove('active');
+    });
+
+    /* ==========================================================================
+       8. Event Listeners & Hotkeys
+       ========================================================================== */
+    openCaseBtn.addEventListener('click', executeSpin);
+
+    studentClearBtn.addEventListener('click', () => {
+      studentInput.value = '';
+      studentInput.focus();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && document.activeElement !== studentInput && !winnerModal.classList.contains('active') && !settingsModal.classList.contains('active')) {
+        e.preventDefault();
+        executeSpin();
+      }
+    });
+
+    soundBtn.addEventListener('click', () => {
+      ensureAudioContext();
+      soundMuted = !soundMuted;
+      soundIconOn.style.display = soundMuted ? 'none' : 'block';
+      soundIconOff.style.display = soundMuted ? 'block' : 'none';
+    });
+
+    fsBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    });
+
+    // Start
+    renderOddsChips();
+    initReel();
+  </script>
+</body>
+</html>
